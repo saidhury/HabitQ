@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabitQuest - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container dashboard">
+        <header>
+            <h1>HabitQuest</h1>
+            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+        </header>
+        
+        <main>
+            <section class="habits-section">
+                <h2>My Habits</h2>
+                <div class="habits-container">
+                    <ul id="habits-list" class="habits-list">
+                        <!-- Habits will be inserted here dynamically -->
+                    </ul>
+                    <div id="no-habits-message" class="no-content-message">
+                        You haven't created any habits yet. Add one below!
+                    </div>
+                </div>
+            </section>
+            
+            <section class="add-habit-section">
+                <h2>Add New Habit</h2>
+                <form id="add-habit-form">
+                    <div class="form-group">
+                        <label for="habit-name">Habit Name</label>
+                        <input type="text" id="habit-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="habit-description">Description (Optional)</label>
+                        <textarea id="habit-description" name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Habit</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                window.location.href = 'login.html';
+            }
+            return token;
+        }
+
+        // Fetch all habits
+        async function fetchHabits() {
+            const token = checkAuth();
+            try {
+                const response = await fetch('http://localhost:5000/api/habits', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const habits = await response.json();
+                    displayHabits(habits);
+                } else if (response.status === 401) {
+                    // Token expired or invalid
+                    localStorage.removeItem('accessToken');
+                    window.location.href = 'login.html';
+                } else {
+                    console.error('Failed to fetch habits');
+                }
+            } catch (error) {
+                console.error('Error fetching habits:', error);
+            }
+        }
+
+        // Display habits in the UI
+        function displayHabits(habits) {
+            const habitsList = document.getElementById('habits-list');
+            const noHabitsMessage = document.getElementById('no-habits-message');
+            
+            habitsList.innerHTML = '';
+            
+            if (habits.length === 0) {
+                noHabitsMessage.style.display = 'block';
+                return;
+            }
+            
+            noHabitsMessage.style.display = 'none';
+            
+            habits.forEach(habit => {
+                const habitItem = document.createElement('li');
+                habitItem.className = 'habit-item';
+                habitItem.dataset.id = habit.id;
+                
+                const habitContent = document.createElement('div');
+                habitContent.className = 'habit-content';
+                
+                const habitName = document.createElement('h3');
+                habitName.textContent = habit.name;
+                
+                const habitDescription = document.createElement('p');
+                habitDescription.textContent = habit.description || 'No description';
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'btn btn-delete';
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', () => deleteHabit(habit.id));
+                
+                habitContent.appendChild(habitName);
+                habitContent.appendChild(habitDescription);
+                
+                habitItem.appendChild(habitContent);
+                habitItem.appendChild(deleteButton);
+                
+                habitsList.appendChild(habitItem);
+            });
+        }
+
+        // Add a new habit
+        async function addHabit(name, description) {
+            const token = checkAuth();
+            try {
+                const response = await fetch('http://localhost:5000/api/habits', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (response.ok) {
+                    const habit = await response.json();
+                    // Refresh habits list
+                    fetchHabits();
+                    return true;
+                } else if (response.status === 401) {
+                    localStorage.removeItem('accessToken');
+                    window.location.href = 'login.html';
+                }
+                return false;
+            } catch (error) {
+                console.error('Error adding habit:', error);
+                return false;
+            }
+        }
+
+        // Delete a habit
+        async function deleteHabit(habitId) {
+            const token = checkAuth();
+            try {
+                const response = await fetch(`http://localhost:5000/api/habits/${habitId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // Remove item from UI
+                    const habitItem = document.querySelector(`.habit-item[data-id="${habitId}"]`);
+                    if (habitItem) {
+                        habitItem.remove();
+                    }
+                    
+                    // Show no habits message if there are no more habits
+                    const habitsList = document.getElementById('habits-list');
+                    if (habitsList.children.length === 0) {
+                        document.getElementById('no-habits-message').style.display = 'block';
+                    }
+                } else if (response.status === 401) {
+                    localStorage.removeItem('accessToken');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Error deleting habit:', error);
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication and load habits
+            checkAuth();
+            fetchHabits();
+            
+            // Add habit form submission
+            document.getElementById('add-habit-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const nameInput = document.getElementById('habit-name');
+                const descriptionInput = document.getElementById('habit-description');
+                
+                const success = await addHabit(nameInput.value, descriptionInput.value);
+                if (success) {
+                    nameInput.value = '';
+                    descriptionInput.value = '';
+                }
+            });
+            
+            // Logout button
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('accessToken');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

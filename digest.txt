@@ -1,0 +1,1281 @@
+Directory structure:
+└── frontend/
+    ├── README.md
+    ├── eslint.config.js
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    ├── public/
+    └── src/
+        ├── App.css
+        ├── App.jsx
+        ├── index.css
+        ├── main.jsx
+        ├── theme.js
+        ├── assets/
+        ├── components/
+        │   └── Common/
+        │       └── ProtectedRoute.jsx
+        ├── pages/
+        │   ├── DashboardPage.jsx
+        │   ├── LoginPage.jsx
+        │   └── RegisterPage.jsx
+        ├── services/
+        │   └── habitService.js
+        └── store/
+            └── slices/
+                ├── habitSlice.js
+                └── store.js
+
+================================================
+File: README.md
+================================================
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+================================================
+File: eslint.config.js
+================================================
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+
+================================================
+File: index.html
+================================================
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+================================================
+File: package.json
+================================================
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
+    "@reduxjs/toolkit": "^2.7.0",
+    "axios": "^1.9.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.5.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "vite": "^6.3.1"
+  }
+}
+
+
+================================================
+File: vite.config.js
+================================================
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+
+================================================
+File: src/App.css
+================================================
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+================================================
+File: src/App.jsx
+================================================
+import React, { useState } from 'react';
+import { Routes, Route, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout, reset } from './store/slices/authSlice'; // Assuming logout logic is here
+
+// MUI Components
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu'; // Example icon
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
+
+// Pages
+import HomePage from './pages/HomePage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import ProtectedRoute from './components/Common/ProtectedRoute.jsx';
+
+function App() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleLogout = () => {
+      dispatch(logout());
+      dispatch(reset());
+      navigate('/login');
+  };
+
+  const drawer = (
+    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', width: 250 }}>
+      <Typography variant="h6" sx={{ my: 2 }}>
+        HabitQuest
+      </Typography>
+      <Divider />
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/">
+            <ListItemText primary="Home" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={RouterLink} to="/dashboard">
+            <ListItemText primary="Dashboard" />
+          </ListItemButton>
+        </ListItem>
+        {/* Add other navigation links here */}
+      </List>
+      <Divider />
+      <Box sx={{ p: 2 }}>
+         {isAuthenticated ? (
+            <Button variant="outlined" fullWidth onClick={handleLogout}>
+                Logout ({user?.username})
+            </Button>
+         ) : (
+            <>
+                <Button component={RouterLink} to="/login" variant="contained" fullWidth sx={{ mb: 1 }}>
+                    Login
+                </Button>
+                <Button component={RouterLink} to="/register" variant="outlined" fullWidth>
+                    Register
+                </Button>
+            </>
+         )}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <AppBar component="nav" position="sticky">
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { sm: 'none' } }} // Show menu icon only on small screens
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            component={RouterLink} // Make title clickable link to home
+            to="/"
+            sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none' }}
+          >
+            HabitQuest
+          </Typography>
+          {/* Desktop Nav Links */}
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Button sx={{ color: '#fff' }} component={RouterLink} to="/">Home</Button>
+            <Button sx={{ color: '#fff' }} component={RouterLink} to="/dashboard">Dashboard</Button>
+            {/* Add other desktop nav links */}
+            {isAuthenticated ? (
+                 <Button sx={{ color: '#fff' }} onClick={handleLogout}>Logout ({user?.username})</Button>
+             ) : (
+                 <>
+                    <Button sx={{ color: '#fff' }} component={RouterLink} to="/login">Login</Button>
+                    <Button sx={{ color: '#fff' }} component={RouterLink} to="/register">Register</Button>
+                 </>
+             )}
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+       {/* Mobile Drawer */}
+       <Box component="nav">
+            <Drawer
+                variant="temporary"
+                open={drawerOpen}
+                onClose={handleDrawerToggle}
+                ModalProps={{
+                    keepMounted: true, // Better open performance on mobile.
+                }}
+                sx={{
+                    display: { xs: 'block', sm: 'none' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+                }}
+            >
+                {drawer}
+            </Drawer>
+        </Box>
+
+
+      {/* Main Content Area */}
+      <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Add more routes here */}
+
+          {/* Catch-all for Not Found */}
+          <Route path="*" element={
+            <Box sx={{ textAlign: 'center', mt: 5 }}>
+                <Typography variant="h4">404 Not Found</Typography>
+                <Button component={RouterLink} to="/" variant="contained" sx={{mt: 2}}>
+                    Go Home
+                </Button>
+            </Box>
+          } />
+        </Routes>
+      </Container>
+
+      {/* Footer */}
+      <Box component="footer" sx={{ bgcolor: 'background.paper', p: 3, mt: 'auto' }} >
+        <Container maxWidth="lg">
+            <Typography variant="body2" color="text.secondary" align="center">
+                HabitQuest © {new Date().getFullYear()}
+            </Typography>
+        </Container>
+      </Box>
+    </Box>
+  );
+}
+
+export default App;
+
+================================================
+File: src/index.css
+================================================
+/* :root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+} */
+
+
+================================================
+File: src/main.jsx
+================================================
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { ThemeProvider } from '@mui/material/styles'; // Import ThemeProvider
+import CssBaseline from '@mui/material/CssBaseline'; // Import CssBaseline
+import store from './store/store';
+import theme from './theme'; // Import the custom theme
+import App from './App.jsx';
+import './index.css'; // Keep this for any remaining global non-MUI styles or resets
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}> {/* Wrap with ThemeProvider */}
+        <CssBaseline /> {/* Adds recommended baseline styles */}
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ThemeProvider>
+    </Provider>
+  </React.StrictMode>,
+)
+
+================================================
+File: src/theme.js
+================================================
+import { createTheme } from '@mui/material/styles';
+import { red } from '@mui/material/colors';
+
+// Create a theme instance.
+const theme = createTheme({
+  palette: {
+    // mode: 'light', // Or 'dark'
+    primary: {
+      main: '#556cd6', // Example primary color
+    },
+    secondary: {
+      main: '#19857b', // Example secondary color
+    },
+    error: {
+      main: red.A400,
+    },
+    // You can define background, text colors etc. here
+    // background: {
+    //   default: '#fff',
+    // },
+  },
+  typography: {
+    // Customize fonts, sizes etc. if needed
+    // fontFamily: [
+    //   '-apple-system',
+    //   'BlinkMacSystemFont',
+    // ...
+    // ].join(','),
+  },
+  // You can customize components globally here
+  // components: {
+  //   MuiButton: {
+  //     styleOverrides: {
+  //       root: {
+  //         borderRadius: 8,
+  //       },
+  //     },
+  //   },
+  // }
+});
+
+export default theme;
+
+================================================
+File: src/components/Common/ProtectedRoute.jsx
+================================================
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useSelector((state) => state.auth);
+  const location = useLocation();
+
+  if (isLoading) {
+    // Show a centered spinner using MUI
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+            <CircularProgress />
+        </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
+export default ProtectedRoute;
+
+================================================
+File: src/pages/DashboardPage.jsx
+================================================
+import React from 'react';
+import { useSelector } from 'react-redux';
+// Removed dispatch, navigate, logout, reset imports as logout is handled in App.jsx now
+
+// MUI Components
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+// Import other MUI components as needed (e.g., List, ListItem, Card, CardContent)
+
+
+function DashboardPage() {
+    // Logout button is now in the main AppBar in App.jsx
+    const { user, isLoading } = useSelector((state) => state.auth); // Get isLoading state too
+
+    if (isLoading && !user) { // Show loading only if user data isn't available yet
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (!user) {
+         // Should be redirected by ProtectedRoute, but as a fallback:
+        return <Typography>User not found. Please log in.</Typography>;
+    }
+
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Dashboard
+      </Typography>
+      <Typography variant="h6" gutterBottom>
+        Welcome, {user.username}!
+      </Typography>
+
+      {/* Example Stats/Info Area */}
+      <Grid container spacing={3} sx={{mb: 4}}>
+          <Grid item xs={12} sm={6} md={3}>
+               <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6">Level</Typography>
+                    <Typography variant="h3">{user.level}</Typography>
+               </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+               <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6">XP</Typography>
+                    <Typography variant="h3">{user.xp}</Typography>
+                    {/* Consider adding XP progress bar here */}
+               </Paper>
+          </Grid>
+           {/* Add more stats grids (e.g., current streak, habits active) */}
+      </Grid>
+
+
+      {/* Placeholder for Habit List Component */}
+      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" gutterBottom>Your Habits</Typography>
+          {/* Replace with actual HabitListComponent */}
+          <Typography>Habit list will be displayed here.</Typography>
+          {/* Example: <HabitListComponent /> */}
+      </Paper>
+
+      {/* Placeholder for Stats Component */}
+       <Paper elevation={2} sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom>Stats Overview</Typography>
+          {/* Replace with actual StatsComponent */}
+          <Typography>Basic stats will be displayed here.</Typography>
+            {/* Example: <StatsComponent /> */}
+      </Paper>
+
+    </Box>
+  );
+}
+
+export default DashboardPage;
+
+================================================
+File: src/pages/LoginPage.jsx
+================================================
+import React, { useState, useEffect } from 'react';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { login, reset } from '../store/slices/authSlice';
+
+// MUI Components
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Link from '@mui/material/Link';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert'; // For displaying errors
+
+function LoginPage() {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const { email, password } = formData;
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const location = useLocation(); // To get redirect location
+
+  const { user, isLoading, isError, isAuthenticated, message } = useSelector(
+    (state) => state.auth
+  );
+
+  const redirectPath = location.state?.from?.pathname || '/dashboard'; // Where to redirect after login
+
+  useEffect(() => {
+    // No need to show error here if using Alert component below
+    // Redirect if logged in
+    if (isAuthenticated) {
+      navigate(redirectPath, { replace: true });
+    }
+    // Cleanup error message on unmount or when auth state changes
+    // return () => {
+    //   if (isError) dispatch(reset()); // Reset only if there was an error?
+    // }
+  }, [isAuthenticated, navigate, redirectPath, dispatch, isError]); // isError in dep array
+
+  const onChange = (e) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [e.target.name]: e.target.value,
+    }));
+    // Clear error message when user starts typing again
+    if (isError) {
+        dispatch(reset());
+    }
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    if (!isLoading) {
+      const userData = { email, password };
+      dispatch(login(userData));
+      // Error/Success is handled by useEffect redirect or Alert display
+    }
+  };
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+          <LockOutlinedIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Sign in
+        </Typography>
+
+        {isError && ( // Display error message using Alert
+            <Alert severity="error" sx={{ width: '100%', mt: 2 }} onClose={() => dispatch(reset())}>
+                {message || 'Login failed. Please check your credentials.'}
+            </Alert>
+        )}
+
+        <Box component="form" onSubmit={onSubmit} noValidate sx={{ mt: 1 }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
+            autoFocus
+            value={email}
+            onChange={onChange}
+            error={isError} // Highlight field if error
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={onChange}
+            error={isError} // Highlight field if error
+          />
+          {/* Add Remember me checkbox if needed */}
+          {/* <FormControlLabel
+            control={<Checkbox value="remember" color="primary" />}
+            label="Remember me"
+          /> */}
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2, position: 'relative' }}
+            disabled={isLoading}
+          >
+            Sign In
+            {isLoading && ( // Show spinner on button when loading
+                <CircularProgress
+                    size={24}
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        marginTop: '-12px',
+                        marginLeft: '-12px',
+                    }}
+                />
+            )}
+          </Button>
+          <Grid container>
+            <Grid item xs>
+              {/* Link for Forgot Password? */}
+              {/* <Link href="#" variant="body2">
+                Forgot password?
+              </Link> */}
+            </Grid>
+            <Grid item>
+              <Link component={RouterLink} to="/register" variant="body2">
+                {"Don't have an account? Sign Up"}
+              </Link>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+    </Container>
+  );
+}
+
+export default LoginPage;
+
+================================================
+File: src/pages/RegisterPage.jsx
+================================================
+import React, { useState, useEffect } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { register, reset } from '../store/slices/authSlice';
+
+// MUI Components
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Link from '@mui/material/Link';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'; // Or PersonAddOutlinedIcon
+import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar'; // For success message
+
+function RegisterPage() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    password2: '',
+  });
+  const { username, email, password, password2 } = formData;
+  const [passwordError, setPasswordError] = useState(''); // For password mismatch
+  const [openSnackbar, setOpenSnackbar] = useState(false); // For success message
+
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { isLoading, isError, message } = useSelector(
+    (state) => state.auth
+  );
+
+  useEffect(() => {
+      // Clear error message on mount/unmount or when success happens
+      return () => {
+          dispatch(reset());
+      }
+  }, [dispatch]);
+
+
+  const onChange = (e) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [e.target.name]: e.target.value,
+    }));
+    // Clear password mismatch error when typing
+    if (e.target.name === 'password' || e.target.name === 'password2') {
+        setPasswordError('');
+    }
+    // Clear backend error message
+    if (isError) {
+        dispatch(reset());
+    }
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    setPasswordError(''); // Clear previous mismatch error
+
+    if (password !== password2) {
+      setPasswordError('Passwords do not match!');
+      return; // Stop submission
+    }
+
+    if (!isLoading) {
+      const userData = { username, email, password };
+      dispatch(register(userData)).then((result) => {
+          if (register.fulfilled.match(result)) {
+              // Show success snackbar
+              setOpenSnackbar(true);
+              // Redirect after a short delay to allow user to see snackbar
+              setTimeout(() => {
+                  navigate('/login');
+              }, 2000); // 2 second delay
+          }
+          // Error is handled by the Alert component via isError state
+      });
+    }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
+  };
+
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+          <LockOutlinedIcon /> {/* Consider PersonAddOutlinedIcon */}
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Sign up
+        </Typography>
+
+        {isError && ( // Display backend error message
+            <Alert severity="error" sx={{ width: '100%', mt: 2 }} onClose={() => dispatch(reset())}>
+                {message || 'Registration failed. Please try again.'}
+            </Alert>
+        )}
+
+        <Box component="form" noValidate onSubmit={onSubmit} sx={{ mt: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                autoComplete="given-name" // More appropriate for username
+                name="username"
+                required
+                fullWidth
+                id="username"
+                label="Username"
+                autoFocus
+                value={username}
+                onChange={onChange}
+                error={isError && message?.toLowerCase().includes('username')} // Basic check if error mentions username
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={onChange}
+                error={isError && message?.toLowerCase().includes('email')} // Basic check
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={onChange}
+                error={!!passwordError || (isError && message?.toLowerCase().includes('password'))} // Show error for mismatch or backend password issues
+                helperText={passwordError} // Display mismatch error here
+              />
+            </Grid>
+             <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="password2"
+                label="Confirm Password"
+                type="password"
+                id="password2"
+                autoComplete="new-password"
+                value={password2}
+                onChange={onChange}
+                error={!!passwordError} // Only highlight this field for mismatch
+              />
+            </Grid>
+            {/* Add agreement checkbox if needed */}
+            {/* <Grid item xs={12}>
+              <FormControlLabel
+                control={<Checkbox value="allowExtraEmails" color="primary" />}
+                label="I want to receive inspiration, marketing promotions and updates via email."
+              />
+            </Grid> */}
+          </Grid>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2, position: 'relative' }}
+            disabled={isLoading}
+          >
+            Sign Up
+             {isLoading && (
+                <CircularProgress
+                    size={24}
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        marginTop: '-12px',
+                        marginLeft: '-12px',
+                    }}
+                />
+            )}
+          </Button>
+          <Grid container justifyContent="flex-end">
+            <Grid item>
+              <Link component={RouterLink} to="/login" variant="body2">
+                Already have an account? Sign in
+              </Link>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+
+       {/* Success Snackbar */}
+       <Snackbar
+            open={openSnackbar}
+            autoHideDuration={6000} // Hide after 6 seconds
+            onClose={handleCloseSnackbar}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+       >
+            <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+                Registration Successful! Redirecting to login...
+            </Alert>
+       </Snackbar>
+    </Container>
+  );
+}
+
+export default RegisterPage;
+
+================================================
+File: src/services/habitService.js
+================================================
+// frontend/src/services/habitService.js
+import api from './api'; // Your configured axios instance
+
+const API_ENDPOINT = '/habits'; // Base endpoint for habits
+
+// Get all habits for the logged-in user
+const getAllHabits = async () => {
+    const response = await api.get(API_ENDPOINT);
+    return response.data; // Returns the array of habits
+};
+
+// Create a new habit
+// habitData should be an object like { name, description, frequency, reminderTime }
+const createHabit = async (habitData) => {
+    const response = await api.post(API_ENDPOINT, habitData);
+    return response.data; // Returns the newly created habit object
+};
+
+// Get a single habit by its ID
+const getHabitById = async (id) => {
+    const response = await api.get(`${API_ENDPOINT}/${id}`);
+    return response.data; // Returns the specific habit object
+};
+
+// Update an existing habit
+// habitData should contain the fields to update
+const updateHabit = async (id, habitData) => {
+    const response = await api.put(`${API_ENDPOINT}/${id}`, habitData);
+    return response.data; // Returns the updated habit object
+};
+
+// Delete a habit by its ID
+const deleteHabit = async (id) => {
+    const response = await api.delete(`${API_ENDPOINT}/${id}`);
+    // DELETE often returns 200 with message or 204 No Content
+    // We might just return the id or a success status/message
+    return { id: id, message: response.data?.message || 'Habit deleted successfully' };
+    // Or if 204: return { id: id, message: 'Habit deleted successfully' };
+};
+
+// --- Placeholder for completing a habit ---
+// const completeHabit = async (id, reflectionData = {}) => {
+//     const response = await api.post(`${API_ENDPOINT}/${id}/complete`, reflectionData);
+//     return response.data; // Should return updated habit/user stats
+// };
+
+
+const habitService = {
+    getAllHabits,
+    createHabit,
+    getHabitById,
+    updateHabit,
+    deleteHabit,
+    // completeHabit, // Add later
+};
+
+export default habitService;
+
+================================================
+File: src/store/slices/habitSlice.js
+================================================
+// frontend/src/store/slices/habitSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import habitService from '../../services/habitService';
+
+const initialState = {
+    habits: [], // Array to store user's habits
+    isLoading: false,
+    isError: false,
+    message: '',
+    // You might add state for a single selected habit if needed for editing
+    // selectedHabit: null,
+};
+
+// Async Thunk: Get all habits for the user
+export const fetchHabits = createAsyncThunk(
+    'habits/fetchAll',
+    async (_, thunkAPI) => { // Use _ if the first arg (payload) isn't needed
+        try {
+            // The token should be automatically included by the axios interceptor
+            return await habitService.getAllHabits();
+        } catch (error) {
+            const message =
+                (error.response?.data?.message) || error.message || error.toString();
+            return thunkAPI.rejectWithValue(message);
+        }
+    }
+);
+
+// Async Thunk: Create a new habit
+export const createNewHabit = createAsyncThunk(
+    'habits/create',
+    async (habitData, thunkAPI) => {
+        try {
+            return await habitService.createHabit(habitData);
+        } catch (error) {
+             const message =
+                (error.response?.data?.message) || error.message || error.toString();
+            return thunkAPI.rejectWithValue(message);
+        }
+    }
+);
+
+// Async Thunk: Update a habit
+export const updateExistingHabit = createAsyncThunk(
+    'habits/update',
+    async ({ id, habitData }, thunkAPI) => { // Expect an object with id and data
+        try {
+            return await habitService.updateHabit(id, habitData);
+        } catch (error) {
+             const message =
+                (error.response?.data?.message) || error.message || error.toString();
+            return thunkAPI.rejectWithValue(message);
+        }
+    }
+);
+
+// Async Thunk: Delete a habit
+export const deleteUserHabit = createAsyncThunk(
+    'habits/delete',
+    async (id, thunkAPI) => { // Expect just the id
+        try {
+            // The service currently returns { id, message }, we only need the id for the reducer
+            await habitService.deleteHabit(id);
+            return id; // Return the id of the deleted habit
+        } catch (error) {
+             const message =
+                (error.response?.data?.message) || error.message || error.toString();
+            return thunkAPI.rejectWithValue(message);
+        }
+    }
+);
+
+
+export const habitSlice = createSlice({
+    name: 'habits',
+    initialState,
+    reducers: {
+        resetHabitState: (state) => initialState, // Action to reset state if needed (e.g., on logout)
+        // Add other simple reducers if needed
+    },
+    extraReducers: (builder) => {
+        builder
+            // Fetch Habits
+            .addCase(fetchHabits.pending, (state) => {
+                state.isLoading = true;
+                state.message = ''; // Clear previous messages
+                state.isError = false;
+            })
+            .addCase(fetchHabits.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.habits = action.payload; // Set habits from API response
+            })
+            .addCase(fetchHabits.rejected, (state, action) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload;
+            })
+            // Create Habit
+            .addCase(createNewHabit.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(createNewHabit.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Add the new habit to the start or end of the list
+                state.habits.push(action.payload);
+                state.message = 'Habit created successfully!'; // Optional success message
+            })
+            .addCase(createNewHabit.rejected, (state, action) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload;
+            })
+             // Update Habit
+            .addCase(updateExistingHabit.pending, (state) => {
+                state.isLoading = true; // Could set a specific 'isUpdating' flag
+            })
+            .addCase(updateExistingHabit.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Find the habit in the array and update it
+                const index = state.habits.findIndex(h => h.id === action.payload.id);
+                if (index !== -1) {
+                    state.habits[index] = action.payload;
+                }
+                 state.message = 'Habit updated successfully!';
+            })
+            .addCase(updateExistingHabit.rejected, (state, action) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload;
+            })
+            // Delete Habit
+            .addCase(deleteUserHabit.pending, (state) => {
+                state.isLoading = true; // Could set a specific 'isDeleting' flag
+            })
+            .addCase(deleteUserHabit.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Filter out the deleted habit using the id returned by the thunk
+                state.habits = state.habits.filter(h => h.id !== action.payload);
+                state.message = 'Habit deleted successfully!';
+            })
+            .addCase(deleteUserHabit.rejected, (state, action) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload;
+            });
+    },
+});
+
+export const { resetHabitState } = habitSlice.actions;
+export default habitSlice.reducer;
+
+================================================
+File: src/store/slices/store.js
+================================================
+// frontend/src/store/store.js
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './slices/authSlice';
+import habitReducer from './slices/habitSlice'; // <-- Import habit reducer
+
+const store = configureStore({
+  reducer: {
+    auth: authReducer,
+    habits: habitReducer, // <-- Add habit reducer
+    // profile: profileReducer, // Add later
+    // ui: uiReducer, // Add later
+  },
+});
+
+export default store;
+
