@@ -21,14 +21,18 @@ module.exports = {
     logging: false
   },
   production: {
-     // ... your production config using process.env ...
     username: process.env.DB_USER_PROD,
     password: process.env.DB_PASSWORD_PROD,
     database: process.env.DB_NAME_PROD,
     host: process.env.DB_HOST_PROD,
-    port: process.env.DB_PORT_PROD || 3306,
-    dialect: "mysql",
-    logging: false
-    // or use_env_variable: "DATABASE_URL"
+    port: process.env.DB_PORT_PROD || 5432, // Default Postgres port
+    dialect: "postgres", // <--- CHANGE THIS
+    logging: false,
+    dialectOptions: { // <-- ADD THIS
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Necessary for Render connection
+      }
+    }
   }
 };
