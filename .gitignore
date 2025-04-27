@@ -30,3 +30,6 @@ Thumbs.db
 .vscode/
 *.iml
 *.suo
+
+digest.txt
+frontend2/
