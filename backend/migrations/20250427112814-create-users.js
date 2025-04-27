@@ -44,12 +44,12 @@ module.exports = {
       createdAt: { // Sequelize manages these automatically if timestamps: true
         allowNull: false,
         type: Sequelize.DATE,
-         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') // Explicit default
+        defaultValue: Sequelize.NOW // Explicit default
       },
       updatedAt: { // Sequelize manages these automatically if timestamps: true
         allowNull: false,
         type: Sequelize.DATE,
-         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP') // Explicit default
+        defaultValue: Sequelize.NOW // Explicit default
       }
     });
     // Add unique constraints separately if needed (though handled by column defs above)
